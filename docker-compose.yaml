@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: mydb
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: ./invoxly-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    volumes:
+      - ./invoxly-backend:/app
+    command: ["./mvnw", "spring-boot:run"]
+
+  frontend:
+    build: ./invoxly-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./invoxly-frontend:/app
+      - /app/node_modules
+    command: ["npm", "run", "dev"]
+
+volumes:
+  mysql-data:
+
