@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Serwis Bazy Danych (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'fullstack_db'
+      MYSQL_ROOT_PASSWORD: 'rootpassword' # Użyj bezpieczniejszego hasła w produkcji
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      # Udostępnij port MySQL na zewnątrz (opcjonalne, do debugowania)
+      - "33066:3306"
+    networks:
+      - app-network
+
+  # Serwis Backendu (Spring Boot)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spring_backend
+    restart: on-failure
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    environment:
+      # Przekazanie zmiennych do application.properties
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=fullstack_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+    networks:
+      - app-network
+
+  # Serwis Frontendu (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react_frontend
+    restart: on-failure
+    depends_on:
+      - backend
+    ports:
+      # Udostępnij port 80 z kontenera Nginx jako port 5173 na hoście
+      - "5173:80"
+    networks:
+      - app-network
+
+# Definicja sieci i wolumenu
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
